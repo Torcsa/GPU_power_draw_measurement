@@ -1,0 +1,23 @@
+Sziasztok!
+
+Sajnos az elozo megoldas nem mukodott megfeleloen, mivel a gpu stress tool egy docker container-t indit es azon belul telepit a teszteleshez szukseges dolgokat es mint kiderult nem olyan egyszeru docker container-en belul docker-t hasznalni (bar elvileg lehet, de ahhoz megfelelo privileges-kel kell inditani a container-t.) 
+
+Ezt emlitettem Simon Csabanak, aki azt mondta, hogy irjam le, hogy hogyan csinaltam eddig.
+
+Szoval alapvetoen 3 kontener fut folyamatosan. Egy monitorozo: netdata, egy adatbazis-kezelo rendszer: mongodb, egy jupyter-server (hogy teszt idoben is tudjuk nezni mar az adatokat, illetve igy konnyu az adatok kiimportalasa is.). A negyedik kontener a GPU stresszelo tool. Ez viszont a lefutasa utan egybol le is lovi magat, nem fut rajta a meghajtason kivul mas processz.
+
+Csatolva elkuldom a Dockerfile-okat/Docker compose yml file-t, amiket hasznaltam. 
+
+A netdata kontener inditasahoz szukseges a hivatalos NVIDIA Driver (ez rajta szokott lenni), illetve NVIDIA Container Toolkit-re is (ez nem szokott rajta lenni, ha valakinek nem kellett meg). Ezt egy Docker compose yml-bol inditottam, mivel olyan osszetett, hosszu az inditasa.
+
+
+En letrehoztam egy docker network-ot, es a tobbi kontenert arra raktam. A netdata container-t azert nem, mert annak muszaj volt a network_mode: host beallitas. A network letrehozasa a setup-network.sh-ban van.
+
+Ezutan a mongodb kontenert inditottam el. Ennek az elinditasa a setup-mongo.sh-ban van.
+
+Vegul egy jupyter server-t inditottam egy kontenerben. Ennek a requirements.txt-ben vannak megadva azok az alapveto package-ek, amiket inditaskor telepitenie kell. A jupyter kontener image-et a Dockerfile-jupyter kesziti el. Az image letrehozasat es a kontener elinditasat a setup-jupyter.sh script vegzi.
+
+Emellett lenne majd a gpu stresszelo tool. Ehhez ezt hasznaltam eddig: https://github.com/wilicc/gpu-burn (Nem nagyon volt CLI-s GPU stresszelo tool, gyakorlatilag ez sem feltetelen az) Ennek a setup-ja a GitHub-on fentvan. Ezt, illetve a tobbi setup-ot a tobbi gepen meg tudnam csinalni, csak ugye ehhez a gephez hozza kell fernem valahogy es nem csak egy kontenerhez.
+
+A benchmarkot mar elvegeztem az XRLabos GPU-n is. Annak a setup-jat is dokumentaltam (nehany elnevezesben mas lehet, mint amiket a most kuldott file-okban kuldok). Ezt is csatolom.
+

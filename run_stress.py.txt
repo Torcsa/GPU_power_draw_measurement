@@ -1,0 +1,127 @@
+import subprocess
+import sys
+import os
+import re
+
+from pymongo import MongoClient
+
+# Checking if the number of parameters is correct
+print(len(sys.argv))
+if len(sys.argv) != 3:
+    print('Not the right amount of parameters')
+    sys.exit(1)
+
+collection_name = sys.argv[1]
+gpu_burn_params = sys.argv[2]
+
+# Creating a new collection in the mongodb
+
+mongo_db_name = 'metrics_db'
+#collection_name = 'new_metric_collection2'
+container_ip = '172.18.0.2'
+mongo_port = 27017
+
+client = MongoClient(f"mongodb://{container_ip}:{mongo_port}/")
+client[mongo_db_name][collection_name]
+print(f'\tInserted collection {collection_name} to mongodb.')
+
+
+# Setting the exporting to yes in the exporting.conf + Changing the collection
+exporting_path = "/etc/netdata/exporting.conf"
+
+# Read the content of the file
+exporting_conf_content = subprocess.run(['docker', 'exec', 'netdata', 'cat', exporting_path], capture_output=True, text=True).stdout
+
+# Modify the content of exporting.conf
+modified_content = ""
+change_next_line = False
+for line in exporting_conf_content.split('\n'):
+    if change_next_line:
+        line = "    enabled = yes"
+        change_next_line = False
+
+    if re.search(r'\s*collection\s*=\s*.*', line):
+        line = f"    collection = {collection_name}"
+    if line == '[mongodb:my_mongodb_instance]':
+        change_next_line = True
+
+    modified_content += line + '\n'
+
+# Write the modified content back to the file
+subprocess.run(['docker', 'exec', 'netdata', 'bash', '-c', f"echo '{modified_content}' > {exporting_path}"])
+
+print('\tChanged netdata exporting configuration.')
+
+# Restarting the netdata container
+subprocess.run(['docker', 'restart', 'netdata'])
+
+print('\tRestarted netdata container.')
+
+# Setting the params for the gpu_burn stressing tool
+dockerfile_path = 'gpu-burn/Dockerfile'
+
+# Read the Dockerfile
+with open(dockerfile_path, 'r') as Dockerfile:
+    lines = Dockerfile.readlines()
+
+# Find the line that starts with CMD
+cmd_line_index = None
+for i in range(len(lines)):
+    if lines[i].strip().startswith('CMD'):
+        cmd_line_index = i
+        break
+
+list_of_params = gpu_burn_params.split(' ')
+new_line = 'CMD [\"./gpu_burn\"'
+for element in list_of_params:
+    new_line += f",\"{element}\""
+
+new_line += "]"
+
+
+# Modify the CMD line
+if cmd_line_index is not None:
+    lines[cmd_line_index] = f'{new_line}\n'
+
+# Rewrite the Dockerfile
+with open(dockerfile_path, 'w') as file:
+    file.writelines(lines)
+
+
+print('\tChanged gpu_burn configuration.')
+
+# Starting the stressing tool
+os.chdir('./gpu-burn')
+subprocess.run(['docker', 'rmi', 'gpu_burn_img'])
+subprocess.run(['docker', 'build', '-t', 'gpu_burn_img', '-f', 'Dockerfile', '.'])
+subprocess.run(['docker', 'run', '--rm', '--gpus', 'all', 'gpu_burn_img'])
+os.chdir('..')
+
+print('\tExecuted gpu_burn.')
+
+
+# Setting the exporting to no in the exporting.conf
+exporting_conf_content = subprocess.run(['docker', 'exec', 'netdata', 'cat', exporting_path], capture_output=True, text=True).stdout
+
+# Modify the content of exporting.conf
+modified_content = ""
+change_next_line = False
+for line in exporting_conf_content.split('\n'):
+    if change_next_line:
+        line = "    enabled = no"
+        change_next_line = False
+
+    if line == '[mongodb:my_mongodb_instance]':
+        change_next_line = True
+
+    modified_content += line + '\n'
+
+# Write the modified content back to the file
+subprocess.run(['docker', 'exec', 'netdata', 'bash', '-c', f"echo '{modified_content}' > {exporting_path}"])
+
+print('\tChanged configuration of exporting.conf.')
+
+# Restarting the netdata container
+subprocess.run(['docker', 'restart', 'netdata'])
+
+print('\tRestarted netdata container')

@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# Durations:
+# standard: 60 seconds
+# long: 300 seconds
+
+# Pre heat the GPU
+echo 'Pre-heat GPU'
+python3 pre_heat_gpu.py
+
+
+for i in 1 2 3
+do
+        # STANDARD DURATION
+        # Test - standard duration
+        echo 'STARTING STANDARD TEST'
+        python3 run-stress.py 'test_standard1' '60'
+
+
+        echo 'STARTING STANDARD TEST WITH DOUBLES'
+        # Test w/ doubles - standard duration
+        python3 run-stress.py 'test_standard_w_doubles1' '-d 60'
+
+
+        # Tensor Core
+
+        echo 'STARTING STANDARD TEST WITH TENSOR CORES'
+        # Test w/ tensor cores  - standard duration
+        python3 run-stress.py 'test_standard_tc1' '-tc 60'
+
+	echo 'STARTING STANDARD TEST WITH TENSOR CORES WITH DOUBLES'
+        # Test w/ tensor cores  - standard duration
+        python3 run-stress.py 'test_standard_tc_w_doubles1' '-tc -d 60'
+
+
+        echo 'STARTING STANDARD TEST WITH TENSOR CORES WITH 80% MEMORY'
+        # Test w/ tensor cores  - standard duration
+        python3 run-stress.py 'test_standard_tc_80p_mem1' '-tc -m 80% 60'
+
+
+        echo 'STARTING STANDARD TEST WITH TENSOR CORES WITH 50% MEMORY'
+        # Test w/ tensor cores  - standard duration
+        python3 run-stress.py 'test_standard_tc_50p_mem1' '-tc -m 50% 60'
+
+
+        echo 'STARTING STANDARD TEST WITH 20% MEMORY'
+        # Test w/ 20% available GPU memory - standard duration
+        python3 run-stress.py 'test_standard_20p_mem1' '-m 20% 60'
+
+
+        echo 'STARTING STANDARD TEST WITH 50% MEMORY'
+        # Test w/ 50% available GPU memory - standard duration
+        python3 run-stress.py 'test_standard_50p_mem1' '-m 50% 60'
+
+
+        echo 'STARTING STANDARD TEST WITH 80% MEMORY'
+        # Test w/ 80% available GPU memory - standard duration
+        python3 run-stress.py 'test_standard_80p_mem1' '-m 80% 60'
+
+
+
+        # LONG DURATION
+        # Test - standard duration
+        python3 run-stress.py 'test_long1' '300'
+
+
+        # Test w/ doubles - standard duration
+        python3 run-stress.py 'test_long_w_doubles1' '-d 300'
+
+
+        # Test w/ tensor cores  - standard duration
+        #python3 run-stress.py 'test_long_tc1' '-tc 300'
+
+
+        # Test w/ 20% available GPU memory - standard duration
+        python3 run-stress.py 'test_long_20p_mem1' '-m 20% 300'
+
+
+        # Test w/ 50% available GPU memory - standard duration
+        python3 run-stress.py 'test_long_50p_mem1' '-m 50% 300'
+
+
+        # Test w/ 80% available GPU memory - standard duration
+        python3 run-stress.py 'test_long_80p_mem1' '-m 80% 300'
+done

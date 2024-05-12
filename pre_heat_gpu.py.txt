@@ -1,0 +1,9 @@
+import os
+import subprocess
+
+# Starting the stressing tool
+os.chdir('./gpu-burn')
+subprocess.run(['docker', 'rmi', 'gpu_burn_img'])
+subprocess.run(['docker', 'build', '-t', 'gpu_burn_img', '-f', 'Dockerfile_pre_heat', '.'])
+subprocess.run(['docker', 'run', '--rm', '--gpus', 'all', 'gpu_burn_img'])
+os.chdir('..')
